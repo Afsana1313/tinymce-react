@@ -6,15 +6,29 @@
  *
  */
 
-import * as React from 'react';
-import { IEvents } from '../Events';
-import { ScriptLoader } from '../ScriptLoader';
-import { getTinymce } from '../TinyMCE';
-import { isFunction, isTextareaOrInput, mergePlugins, uuid, configHandlers, isBeforeInputEventAvailable, isInDoc, setMode } from '../Utils';
-import { EditorPropTypes, IEditorPropTypes } from './EditorPropTypes';
-import { Bookmark, Editor as TinyMCEEditor, EditorEvent, TinyMCE } from 'tinymce';
+import * as React from "react";
+import { IEvents } from "../Events";
+import { ScriptLoader } from "../ScriptLoader";
+import { getTinymce } from "../TinyMCE";
+import {
+  isFunction,
+  isTextareaOrInput,
+  mergePlugins,
+  uuid,
+  configHandlers,
+  isBeforeInputEventAvailable,
+  isInDoc,
+  setMode
+} from "../Utils";
+import { EditorPropTypes, IEditorPropTypes } from "./EditorPropTypes";
+import {
+  Bookmark,
+  Editor as TinyMCEEditor,
+  EditorEvent,
+  TinyMCE
+} from "tinymce";
 
-type EditorOptions = Parameters<TinyMCE['init']>[0];
+type EditorOptions = Parameters<TinyMCE["init"]>[0];
 
 export interface IProps {
   apiKey: string;
@@ -26,8 +40,8 @@ export interface IProps {
   init: EditorOptions & { selector?: undefined; target?: undefined };
   tagName: string;
   cloudChannel: string;
-  plugins: NonNullable<EditorOptions['plugins']>;
-  toolbar: NonNullable<EditorOptions['toolbar']>;
+  plugins: NonNullable<EditorOptions["plugins"]>;
+  toolbar: NonNullable<EditorOptions["toolbar"]>;
   disabled: boolean;
   textareaName: string;
   tinymceScriptSrc: string;
@@ -39,16 +53,22 @@ export interface IProps {
   };
 }
 
-export interface IAllProps extends Partial<IProps>, Partial<IEvents> { }
+export interface IAllProps extends Partial<IProps>, Partial<IEvents> {}
 
-const changeEvents = () => getTinymce()?.Env?.browser?.isIE() ? 'change keyup compositionend setcontent' : 'change input compositionend setcontent';
-const beforeInputEvent = () => isBeforeInputEventAvailable() ? 'beforeinput SelectionChange' : 'SelectionChange';
+const changeEvents = () =>
+  getTinymce()?.Env?.browser?.isIE()
+    ? "change keyup compositionend setcontent"
+    : "change input compositionend setcontent";
+const beforeInputEvent = () =>
+  isBeforeInputEventAvailable()
+    ? "beforeinput SelectionChange"
+    : "SelectionChange";
 
 export class Editor extends React.Component<IAllProps> {
   public static propTypes: IEditorPropTypes = EditorPropTypes;
 
   public static defaultProps: Partial<IAllProps> = {
-    cloudChannel: '6'
+    cloudChannel: "6"
   };
 
   public editor?: TinyMCEEditor;
@@ -57,19 +77,23 @@ export class Editor extends React.Component<IAllProps> {
   private elementRef: React.RefObject<HTMLElement>;
   private inline: boolean;
   private currentContent?: string;
-  private boundHandlers: Record<string, (event: EditorEvent<unknown>) => unknown>;
+  private boundHandlers: Record<
+    string,
+    (event: EditorEvent<unknown>) => unknown
+  >;
   private rollbackTimer: number | undefined = undefined;
   private valueCursor: Bookmark | undefined = undefined;
 
   public constructor(props: Partial<IAllProps>) {
     super(props);
-    this.id = this.props.id || uuid('tiny-react');
+    this.id = this.props.id || uuid("tiny-react");
     this.elementRef = React.createRef<HTMLElement>();
     this.inline = this.props.inline ?? this.props.init?.inline ?? false;
     this.boundHandlers = {};
   }
 
   public componentDidUpdate(prevProps: Partial<IAllProps>) {
+    console.log("component updated ");
     if (this.rollbackTimer) {
       clearTimeout(this.rollbackTimer);
       this.rollbackTimer = undefined;
@@ -78,13 +102,19 @@ export class Editor extends React.Component<IAllProps> {
       this.bindHandlers(prevProps);
       if (this.editor.initialized) {
         this.currentContent = this.currentContent ?? this.editor.getContent();
-        if (typeof this.props.initialValue === 'string' && this.props.initialValue !== prevProps.initialValue) {
+        if (
+          typeof this.props.initialValue === "string" &&
+          this.props.initialValue !== prevProps.initialValue
+        ) {
           // same as resetContent in TinyMCE 5
           this.editor.setContent(this.props.initialValue);
           this.editor.undoManager.clear();
           this.editor.undoManager.add();
           this.editor.setDirty(false);
-        } else if (typeof this.props.value === 'string' && this.props.value !== this.currentContent) {
+        } else if (
+          typeof this.props.value === "string" &&
+          this.props.value !== this.currentContent
+        ) {
           const localEditor = this.editor;
           localEditor.undoManager.transact(() => {
             // inline editors grab focus when restoring selection
@@ -95,18 +125,23 @@ export class Editor extends React.Component<IAllProps> {
                 // getBookmark throws exceptions when the editor has not been focused
                 // possibly only in inline mode but I'm not taking chances
                 cursor = localEditor.selection.getBookmark(3);
-              } catch (e) { /* ignore */ }
+              } catch (e) {
+                /* ignore */
+              }
             }
             const valueCursor = this.valueCursor;
             localEditor.setContent(this.props.value as string);
             if (!this.inline || localEditor.hasFocus()) {
-              for (const bookmark of [ cursor, valueCursor ]) {
+              for (const bookmark of [cursor, valueCursor]) {
                 if (bookmark) {
                   try {
                     localEditor.selection.moveToBookmark(bookmark);
+                    console.log("forked statement");
                     this.valueCursor = bookmark;
                     break;
-                  } catch (e) { /* ignore */ }
+                  } catch (e) {
+                    /* ignore */
+                  }
                 }
               }
             }
@@ -114,7 +149,7 @@ export class Editor extends React.Component<IAllProps> {
         }
         if (this.props.disabled !== prevProps.disabled) {
           const disabled = this.props.disabled ?? false;
-          setMode(this.editor, disabled ? 'readonly' : 'design');
+          setMode(this.editor, disabled ? "readonly" : "design");
         }
       }
     }
@@ -123,7 +158,10 @@ export class Editor extends React.Component<IAllProps> {
   public componentDidMount() {
     if (getTinymce() !== null) {
       this.initialise();
-    } else if (this.elementRef.current && this.elementRef.current.ownerDocument) {
+    } else if (
+      this.elementRef.current &&
+      this.elementRef.current.ownerDocument
+    ) {
       ScriptLoader.load(
         this.elementRef.current.ownerDocument,
         this.getScriptSrc(),
@@ -140,9 +178,9 @@ export class Editor extends React.Component<IAllProps> {
     if (editor) {
       editor.off(changeEvents(), this.handleEditorChange);
       editor.off(beforeInputEvent(), this.handleBeforeInput);
-      editor.off('keypress', this.handleEditorChangeSpecial);
-      editor.off('keydown', this.handleBeforeInputSpecial);
-      editor.off('NewBlock', this.handleEditorChange);
+      editor.off("keypress", this.handleEditorChangeSpecial);
+      editor.off("keydown", this.handleBeforeInputSpecial);
+      editor.off("NewBlock", this.handleEditorChange);
       Object.keys(this.boundHandlers).forEach((eventName) => {
         editor.off(eventName, this.boundHandlers[eventName]);
       });
@@ -157,7 +195,7 @@ export class Editor extends React.Component<IAllProps> {
   }
 
   private renderInline() {
-    const { tagName = 'div' } = this.props;
+    const { tagName = "div" } = this.props;
 
     return React.createElement(tagName, {
       ref: this.elementRef,
@@ -166,54 +204,61 @@ export class Editor extends React.Component<IAllProps> {
   }
 
   private renderIframe() {
-    return React.createElement('textarea', {
+    return React.createElement("textarea", {
       ref: this.elementRef,
-      style: { visibility: 'hidden' },
+      style: { visibility: "hidden" },
       name: this.props.textareaName,
       id: this.id
     });
   }
 
   private getScriptSrc() {
-    if (typeof this.props.tinymceScriptSrc === 'string') {
+    if (typeof this.props.tinymceScriptSrc === "string") {
       return this.props.tinymceScriptSrc;
     } else {
       const channel = this.props.cloudChannel;
-      const apiKey = this.props.apiKey ? this.props.apiKey : 'no-api-key';
+      const apiKey = this.props.apiKey ? this.props.apiKey : "no-api-key";
       return `https://cdn.tiny.cloud/1/${apiKey}/tinymce/${channel}/tinymce.min.js`;
     }
   }
 
   private getInitialValue() {
-    if (typeof this.props.initialValue === 'string') {
+    if (typeof this.props.initialValue === "string") {
       return this.props.initialValue;
-    } else if (typeof this.props.value === 'string') {
+    } else if (typeof this.props.value === "string") {
       return this.props.value;
     } else {
-      return '';
+      return "";
     }
   }
 
   private bindHandlers(prevProps: Partial<IAllProps>) {
     if (this.editor !== undefined) {
       // typescript chokes trying to understand the type of the lookup function
-      configHandlers(this.editor, prevProps, this.props, this.boundHandlers, (key) => this.props[key] as any);
+      configHandlers(
+        this.editor,
+        prevProps,
+        this.props,
+        this.boundHandlers,
+        (key) => this.props[key] as any
+      );
       // check if we should monitor editor changes
-      const isValueControlled = (p: Partial<IAllProps>) => p.onEditorChange !== undefined || p.value !== undefined;
+      const isValueControlled = (p: Partial<IAllProps>) =>
+        p.onEditorChange !== undefined || p.value !== undefined;
       const wasControlled = isValueControlled(prevProps);
       const nowControlled = isValueControlled(this.props);
       if (!wasControlled && nowControlled) {
         this.editor.on(changeEvents(), this.handleEditorChange);
         this.editor.on(beforeInputEvent(), this.handleBeforeInput);
-        this.editor.on('keydown', this.handleBeforeInputSpecial);
-        this.editor.on('keyup', this.handleEditorChangeSpecial);
-        this.editor.on('NewBlock', this.handleEditorChange);
+        this.editor.on("keydown", this.handleBeforeInputSpecial);
+        this.editor.on("keyup", this.handleEditorChangeSpecial);
+        this.editor.on("NewBlock", this.handleEditorChange);
       } else if (wasControlled && !nowControlled) {
         this.editor.off(changeEvents(), this.handleEditorChange);
         this.editor.off(beforeInputEvent(), this.handleBeforeInput);
-        this.editor.off('keydown', this.handleBeforeInputSpecial);
-        this.editor.off('keyup', this.handleEditorChangeSpecial);
-        this.editor.off('NewBlock', this.handleEditorChange);
+        this.editor.off("keydown", this.handleBeforeInputSpecial);
+        this.editor.off("keyup", this.handleEditorChangeSpecial);
+        this.editor.off("NewBlock", this.handleEditorChange);
       }
     }
   }
@@ -229,7 +274,9 @@ export class Editor extends React.Component<IAllProps> {
         if (this.valueCursor && (!this.inline || editor.hasFocus())) {
           try {
             editor.selection.moveToBookmark(this.valueCursor);
-          } catch (e) { /* ignore */ }
+          } catch (e) {
+            /* ignore */
+          }
         }
       });
     }
@@ -237,19 +284,29 @@ export class Editor extends React.Component<IAllProps> {
   };
 
   private handleBeforeInput = (_evt: EditorEvent<unknown>) => {
-    if (this.props.value !== undefined && this.props.value === this.currentContent && this.editor) {
+    if (
+      this.props.value !== undefined &&
+      this.props.value === this.currentContent &&
+      this.editor
+    ) {
       if (!this.inline || this.editor.hasFocus) {
         try {
           // getBookmark throws exceptions when the editor has not been focused
           // possibly only in inline mode but I'm not taking chances
           this.valueCursor = this.editor.selection.getBookmark(3);
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }
     }
   };
 
   private handleBeforeInputSpecial = (evt: EditorEvent<KeyboardEvent>) => {
-    if (evt.key === 'Enter' || evt.key === 'Backspace' || evt.key === 'Delete') {
+    if (
+      evt.key === "Enter" ||
+      evt.key === "Backspace" ||
+      evt.key === "Delete"
+    ) {
       this.handleBeforeInput(evt);
     }
   };
@@ -258,12 +315,16 @@ export class Editor extends React.Component<IAllProps> {
     const editor = this.editor;
     if (editor && editor.initialized) {
       const newContent = editor.getContent();
-      if (this.props.value !== undefined && this.props.value !== newContent && this.props.rollback !== false) {
+      if (
+        this.props.value !== undefined &&
+        this.props.value !== newContent &&
+        this.props.rollback !== false
+      ) {
         // start a timer and revert to the value if not applied in time
         if (!this.rollbackTimer) {
           this.rollbackTimer = window.setTimeout(
             this.rollbackChange,
-            typeof this.props.rollback === 'number' ? this.props.rollback : 200
+            typeof this.props.rollback === "number" ? this.props.rollback : 200
           );
         }
       }
@@ -278,7 +339,7 @@ export class Editor extends React.Component<IAllProps> {
   };
 
   private handleEditorChangeSpecial = (evt: EditorEvent<KeyboardEvent>) => {
-    if (evt.key === 'Backspace' || evt.key === 'Delete') {
+    if (evt.key === "Backspace" || evt.key === "Delete") {
       this.handleEditorChange(evt);
     }
   };
@@ -300,14 +361,14 @@ export class Editor extends React.Component<IAllProps> {
         setTimeout(() => this.initialise(attempts + 1), 100);
       } else {
         // give up, at this point it seems that more polling is unlikely to help
-        throw new Error('tinymce can only be initialised when in a document');
+        throw new Error("tinymce can only be initialised when in a document");
       }
       return;
     }
 
     const tinymce = getTinymce();
     if (!tinymce) {
-      throw new Error('tinymce should have been loaded into global scope');
+      throw new Error("tinymce should have been loaded into global scope");
     }
 
     const finalInit: EditorOptions = {
@@ -329,7 +390,7 @@ export class Editor extends React.Component<IAllProps> {
         // problem... We avoid it by sneaking in a set content before the first
         // "official" setContent and using TinyMCE to do the sanitization.
         if (this.inline && !isTextareaOrInput(target)) {
-          editor.once('PostRender', (_evt) => {
+          editor.once("PostRender", (_evt) => {
             editor.setContent(this.getInitialValue(), { no_events: true });
           });
         }
@@ -351,15 +412,18 @@ export class Editor extends React.Component<IAllProps> {
           editor.setDirty(false);
         }
         const disabled = this.props.disabled ?? false;
-        setMode(this.editor, disabled ? 'readonly' : 'design');
+        setMode(this.editor, disabled ? "readonly" : "design");
         // ensure existing init_instance_callback is called
-        if (this.props.init && isFunction(this.props.init.init_instance_callback)) {
+        if (
+          this.props.init &&
+          isFunction(this.props.init.init_instance_callback)
+        ) {
           this.props.init.init_instance_callback(editor);
         }
       }
     };
     if (!this.inline) {
-      target.style.visibility = '';
+      target.style.visibility = "";
     }
     if (isTextareaOrInput(target)) {
       target.value = this.getInitialValue();
