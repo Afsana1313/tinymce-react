@@ -23,7 +23,7 @@
     "deploy-storybook": "yarn storybook-to-ghpages --source-branch=main"
   },
   "keywords": [],
-  "author": "Tiny Technologies",
+  "author": "Afsana Zaman Nipa",
   "license": "MIT",
   "dependencies": {
     "prop-types": "^15.6.2",
@@ -69,5 +69,5 @@
     "webpack": "^5.71.0"
   },
   "version": "4.1.2-rc",
-  "name": "@afsana1313/@tinymce/tinymce-react"
+  "name": "@afsana1313/tinymce-react"
 }
